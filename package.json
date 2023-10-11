@@ -1,0 +1,16 @@
+{
+  "name": "korpela-fetch",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Fetch energy meter data from Korpelan voima website and send it to InfluxDB",
+  "main": "index.js",
+  "dependencies": {
+    "@influxdata/influxdb-client": "^1.33.2",
+    "cheerio": "^1.0.0-rc.12",
+    "luxon": "^3.3.0",
+    "puppeteer": "^21.3.8"
+  },
+  "scripts": {},
+  "author": "",
+  "license": "MIT"
+}

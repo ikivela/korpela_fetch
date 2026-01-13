@@ -1,4 +1,3 @@
 node_modules/
-tmp/
 .cache
-local.settings.json
+.env

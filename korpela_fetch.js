@@ -140,7 +140,7 @@ async function storeInfluxDB(data) {
   }
   const influxDB = new InfluxDB({ url: influxUrl, token: influxToken });
   const writeApi = influxDB.getWriteApi(influxOrg, influxBucket);
-  writeApi.useDefaultTags({ place: 'koivuniemi' });
+  writeApi.useDefaultTags({ place: process.env.INFLUXDB_DEFAULT_TAG_PLACE || 'home' });
 
   const measurements = data.data.consumption.usageHistory.usages;
   try {

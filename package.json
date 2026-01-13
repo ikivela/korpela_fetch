@@ -3,14 +3,18 @@
   "version": "1.0.0",
   "private": true,
   "description": "Fetch energy meter data from Korpelan voima website and send it to InfluxDB",
-  "main": "index.js",
+  "main": "korpelaFetch/index.js",
   "dependencies": {
-    "@influxdata/influxdb-client": "^1.33.2",
-    "cheerio": "^1.0.0-rc.12",
-    "luxon": "^3.3.0",
-    "puppeteer": "^21.3.8"
+    "@influxdata/influxdb-client": "latest",
+    "cheerio": "latest",
+    "dotenv": "latest",
+    "influxdb-client": "^0.0.1",
+    "luxon": "latest",
+    "puppeteer": "^24.35.0"
   },
-  "scripts": {},
+  "scripts": {
+    "fetch": "node korpela_fetch.js"
+  },
   "author": "",
   "license": "MIT"
 }

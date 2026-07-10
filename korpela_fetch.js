@@ -369,7 +369,7 @@ async function korpelaFetch() {
 
   //else console.log(`${process.env.korpela_username} ${process.env.korpela_password}`);
   //return;
-  const browser = await puppeteer.launch({ headless: true, args: ['--window-size=1920,1080'], ignoreDefaultArgs: ['--disable-extensions'] });
+  const browser = await puppeteer.launch({ headless: true, args: ['--window-size=1920,1080', '--no-sandbox', '--disable-setuid-sandbox'], ignoreDefaultArgs: ['--disable-extensions'] });
   const page = await browser.newPage();
   // Avaa devtools automaattisesti
   //await page.goto('about:blank');

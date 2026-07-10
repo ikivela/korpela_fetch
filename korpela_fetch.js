@@ -361,7 +361,7 @@ async function setReportDate(page, dateString) {
   await page.waitForNetworkIdle({ idleTime: 700, timeout: 12000 }).catch(() => {});
 }
 
-async function korpelaFetch() {
+async function korpelaFetch(targetDateOverride = null) {
   if (!process.env.korpela_username || !process.env.korpela_password) return console.error("username or password missing? Configure .env file");
   const timings = {};
   const totalStartedAt = Date.now();
@@ -449,7 +449,17 @@ async function korpelaFetch() {
   timings.quarterSelectionMs = Date.now() - quarterStartedAt;
 
   const setDateStartedAt = Date.now();
-  const targetDate = DateTime.now().setZone('Europe/Helsinki').minus({ days: 1 }).toFormat('dd.MM.yyyy');
+  let targetDate;
+  if (targetDateOverride) {
+    // Accept both dd.MM.yyyy and YYYY-MM-DD formats
+    const parsedOverride = DateTime.fromFormat(targetDateOverride, 'dd.MM.yyyy', { zone: 'Europe/Helsinki' }).isValid
+      ? DateTime.fromFormat(targetDateOverride, 'dd.MM.yyyy', { zone: 'Europe/Helsinki' })
+      : DateTime.fromISO(targetDateOverride, { zone: 'Europe/Helsinki' });
+    if (!parsedOverride.isValid) throw new Error(`Invalid --date value: ${targetDateOverride}`);
+    targetDate = parsedOverride.toFormat('dd.MM.yyyy');
+  } else {
+    targetDate = DateTime.now().setZone('Europe/Helsinki').minus({ days: 1 }).toFormat('dd.MM.yyyy');
+  }
   await setReportDate(page, targetDate);
   console.log(`report date set to ${targetDate}`);
   timings.setDateMs = Date.now() - setDateStartedAt;
@@ -516,7 +526,7 @@ async function korpelaFetch() {
 
 }
 
-async function korpelaFetchWithRetry(maxAttempts = maxRetryAttempts) {
+async function korpelaFetchWithRetry(maxAttempts = maxRetryAttempts, targetDateOverride = null) {
   const attempts = Number.isFinite(maxAttempts) && maxAttempts > 0 ? Math.floor(maxAttempts) : 1;
   let lastError = null;
 
@@ -525,7 +535,7 @@ async function korpelaFetchWithRetry(maxAttempts = maxRetryAttempts) {
       if (attempt > 1) {
         console.log(`Retry attempt ${attempt}/${attempts}`);
       }
-      await korpelaFetch();
+      await korpelaFetch(targetDateOverride);
       return;
     } catch (error) {
       lastError = error;
@@ -580,12 +590,27 @@ async function storeInfluxDB(data) {
 
 
 (async () => {
+  const args = process.argv.slice(2);
 
-	if (process.argv[2]) {
-		console.log("arg", process.argv[2])
-    const filename = process.argv[2];
-		if (await fs.existsSync(filename)) {
-			try {
+  // Parse --date <value>
+  let dateArg = null;
+  const dateIdx = args.indexOf('--date');
+  if (dateIdx !== -1) {
+    dateArg = args[dateIdx + 1];
+    if (!dateArg) {
+      console.error('--date requires a value, e.g. --date 2026-07-09 or --date 09.07.2026');
+      process.exit(1);
+    }
+    args.splice(dateIdx, 2);
+  }
+
+  // Remaining non-flag arg is treated as a filename
+  const filename = args.find(a => !a.startsWith('-'));
+
+  if (filename) {
+    console.log('arg', filename);
+    if (fs.existsSync(filename)) {
+      try {
         let data = null;
         if (filename.toLowerCase().endsWith('.xlsx')) {
           const xlsxBuffer = fs.readFileSync(filename);
@@ -594,15 +619,14 @@ async function storeInfluxDB(data) {
           const json = fs.readFileSync(filename);
           data = JSON.parse(json);
         }
-			  await storeInfluxDB(data);
-			
-			} catch (e) {
-				console.error(e);
-			}
-		}
+        await storeInfluxDB(data);
+      } catch (e) {
+        console.error(e);
+      }
+    }
     process.exit(0);
   } else {
-    await korpelaFetchWithRetry();
-	}
+    await korpelaFetchWithRetry(maxRetryAttempts, dateArg);
+  }
 })();
 
